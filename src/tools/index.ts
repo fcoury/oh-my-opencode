@@ -21,9 +21,11 @@ import { grep } from "./grep"
 import { glob } from "./glob"
 import { slashcommand } from "./slashcommand"
 import { skill } from "./skill"
+import { toggleOmoTool, initializeToggleOmoTool } from "./toggle-omo"
 
 export { interactive_bash, startBackgroundCheck as startTmuxCheck } from "./interactive-bash"
 export { getTmuxPath } from "./interactive-bash/utils"
+export { initializeToggleOmoTool }
 
 import {
   createBackgroundTask,
@@ -65,4 +67,5 @@ export const builtinTools = {
   glob,
   slashcommand,
   skill,
+  toggle_omo: toggleOmoTool,
 }

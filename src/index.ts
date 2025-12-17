@@ -22,6 +22,7 @@ import {
   createInteractiveBashSessionHook,
   createEmptyMessageSanitizerHook,
 } from "./hooks";
+
 import { createGoogleAntigravityAuthPlugin } from "./auth/antigravity";
 import {
   loadUserCommands,
@@ -42,7 +43,7 @@ import {
   setMainSession,
   getMainSessionID,
 } from "./features/claude-code-session-state";
-import { builtinTools, createCallOmoAgent, createBackgroundTools, createLookAt, interactive_bash, getTmuxPath } from "./tools";
+import { builtinTools, createCallOmoAgent, createBackgroundTools, createLookAt, interactive_bash, getTmuxPath, initializeToggleOmoTool } from "./tools";
 import { BackgroundManager } from "./features/background-agent";
 import { createBuiltinMcps } from "./mcp";
 import { OhMyOpenCodeConfigSchema, type OhMyOpenCodeConfig, type HookName } from "./config";
@@ -178,6 +179,31 @@ function loadPluginConfig(directory: string): OhMyOpenCodeConfig {
 
 const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   const pluginConfig = loadPluginConfig(ctx.directory);
+  
+  // Determine passthrough mode: env var > config
+  // OH_MY_OPENCODE_ENABLED=false means passthrough mode
+  let isPassthroughMode = pluginConfig.passthrough_mode ?? false;
+  const envValue = process.env.OH_MY_OPENCODE_ENABLED;
+  if (envValue !== undefined) {
+    const isEnabled = !["false", "0", ""].includes(envValue.toLowerCase());
+    isPassthroughMode = !isEnabled;
+  }
+  
+  // Early return if in passthrough mode (vanilla OpenCode)
+  if (isPassthroughMode) {
+    log("Oh My OpenCode in passthrough mode (vanilla OpenCode)");
+    
+    // Initialize toggle tool (only tool available in passthrough mode)
+    const backgroundManager = new BackgroundManager(ctx);
+    initializeToggleOmoTool(backgroundManager, ctx.directory, true);
+    
+    return {
+      tool: {
+        toggle_omo: builtinTools.toggle_omo,
+      },
+    };
+  }
+  
   const disabledHooks = new Set(pluginConfig.disabled_hooks ?? []);
   const isHookEnabled = (hookName: HookName) => !disabledHooks.has(hookName);
 
@@ -250,6 +276,9 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
     : null;
 
   const backgroundManager = new BackgroundManager(ctx);
+  
+  // Initialize toggle_omo tool (currently Oh-My-Opencode is active)
+  initializeToggleOmoTool(backgroundManager, ctx.directory, false);
 
   const backgroundNotificationHook = isHookEnabled("background-notification")
     ? createBackgroundNotificationHook(backgroundManager)
