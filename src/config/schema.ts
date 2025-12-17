@@ -108,6 +108,7 @@ export const OmoAgentConfigSchema = z.object({
 
 export const OhMyOpenCodeConfigSchema = z.object({
   $schema: z.string().optional(),
+  passthrough_mode: z.boolean().optional(),
   disabled_mcps: z.array(McpNameSchema).optional(),
   disabled_agents: z.array(BuiltinAgentNameSchema).optional(),
   disabled_hooks: z.array(HookNameSchema).optional(),

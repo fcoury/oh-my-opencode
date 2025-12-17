@@ -58,6 +58,7 @@ No stupid token consumption massive subagents here. No bloat tools here.
     - [Verify the setup](#verify-the-setup)
     - [Say 'Congratulations! 🎉' to the user](#say-congratulations--to-the-user)
     - [Too Complicated?](#too-complicated)
+  - [Uninstallation](#uninstallation)
   - [Features](#features)
     - [Agents: Your Teammates](#agents-your-teammates)
     - [Background Agents: Work Like a Team](#background-agents-work-like-a-team)
@@ -400,6 +401,102 @@ That's it. The agent will figure out the rest and handle everything automaticall
 
 </details>
 
+## Uninstallation
+
+To remove oh-my-opencode:
+
+1. **Remove the plugin from your OpenCode config**
+
+   Edit `~/.config/opencode/opencode.json` (or `opencode.jsonc`) and remove `"oh-my-opencode"` from the `plugin` array:
+
+   ```bash
+   # Using jq
+   jq '.plugin = [.plugin[] | select(. != "oh-my-opencode")]' \
+       ~/.config/opencode/opencode.json > /tmp/oc.json && \
+       mv /tmp/oc.json ~/.config/opencode/opencode.json
+   ```
+
+2. **Remove configuration files (optional)**
+
+   ```bash
+   # Remove user config
+   rm -f ~/.config/opencode/oh-my-opencode.json
+
+   # Remove project config (if exists)
+   rm -f .opencode/oh-my-opencode.json
+   ```
+
+3. **Verify removal**
+
+   ```bash
+   opencode --version
+   # Plugin should no longer be loaded
+   ```
+
+## Toggling Between Oh-My-Opencode and Vanilla OpenCode
+
+Don't want to uninstall just to use vanilla OpenCode occasionally? You can toggle between Oh-My-Opencode and vanilla OpenCode without removing the plugin.
+
+### Two Ways to Toggle
+
+#### 1. **Environment Variable** (Per-Session Override)
+
+Disable Oh-My-Opencode for a single session:
+
+```bash
+# Run with vanilla OpenCode (Oh-My-Opencode disabled)
+OH_MY_OPENCODE_ENABLED=false opencode
+
+# Run normally (Oh-My-Opencode active)
+opencode
+```
+
+#### 2. **Config File** (Persistent Setting)
+
+Set `passthrough_mode` in your config file:
+
+```json
+// ~/.config/opencode/oh-my-opencode.json or .opencode/oh-my-opencode.json
+{
+  "passthrough_mode": true  // Disables Oh-My-Opencode features
+}
+```
+
+Project-level config (`.opencode/oh-my-opencode.json`) overrides user-level config.
+
+#### 3. **Agent Tool** (Update Config for Next Session)
+
+Ask the agent to toggle the mode:
+
+```
+> Toggle Oh-My-Opencode mode
+```
+
+The agent will use the `toggle_omo` tool which:
+- Updates your config file to toggle the mode
+- Shows what will happen in the **next session** (after restart)
+- **Blocks** if background agents are running (prevents data loss)
+- **Requires restarting OpenCode** for changes to take effect
+
+**Important**: The toggle tool only updates configuration. Changes apply to the **next** OpenCode session, not the current one.
+
+**Toggle priority**: Environment variable > Config file
+
+### What Gets Disabled in Vanilla Mode?
+
+When Oh-My-Opencode is disabled (passthrough mode):
+- ❌ All specialized agents (OmO, oracle, librarian, explore, etc.)
+- ❌ All enhanced tools (LSP operations, AST-grep, look_at, etc.)
+- ❌ All Oh-My-Opencode hooks (todo continuation, comment checker, etc.)
+- ❌ All built-in MCPs (context7, websearch_exa, grep_app)
+
+What remains:
+- ✅ Standard OpenCode agents (build, plan)
+- ✅ Core OpenCode tools and features
+- ✅ Your custom OpenCode configurations
+- ✅ The `toggle_omo` tool (to update config for next session)
+
+**Use case**: Quickly test if an issue is caused by Oh-My-Opencode without uninstalling. Toggle the mode, restart OpenCode, and test again.
 
 ## Features
 
@@ -633,6 +730,26 @@ Schema autocomplete supported:
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json"
 }
 ```
+
+### Passthrough Mode
+
+Toggle between Oh-My-Opencode and vanilla OpenCode without uninstalling:
+
+```json
+{
+  "passthrough_mode": false  // default: false (Oh-My-Opencode active)
+}
+```
+
+When `true`, all Oh-My-Opencode features are disabled, giving you vanilla OpenCode.
+
+**Environment variable override**: `OH_MY_OPENCODE_ENABLED=false opencode` (takes precedence over config file)
+
+**Agent tool**: Ask the agent to "toggle Oh-My-Opencode mode" - it will update the config for the next session
+
+**Important**: Changes to `passthrough_mode` require restarting OpenCode to take effect.
+
+See [Toggling Between Oh-My-Opencode and Vanilla OpenCode](#toggling-between-oh-my-opencode-and-vanilla-opencode) for details.
 
 ### Google Auth
 
